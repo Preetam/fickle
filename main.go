@@ -38,41 +38,53 @@ func handleConnection(conn net.Conn) {
 
 		// Read the first character
 		if buf[0] == 's' {
-			log.Println("SET")
-
-			conn.Read(buf)
-			keyLength := buf[0]
-			log.Printf("keyLength: %d\n", keyLength)
-
-			conn.Read(buf)
-			valueLength := buf[0]
-			log.Printf("valueLength: %d\n", valueLength)
-
-			key := make([]byte, keyLength)
-			value := make([]byte, valueLength)
-
-			conn.Read(key)
-			conn.Read(value)
-
-			log.Printf("Setting %s => %s\n", key, value)
-			db.Set(string(key), string(value))
+			handleSet(conn)
 		}
 
 		if buf[0] == 'g' {
-			log.Println("GET")
-
-			conn.Read(buf)
-			keyLength := buf[0]
-			log.Printf("keyLength: %d\n", keyLength)
-
-			key := make([]byte, keyLength)
-			conn.Read(key)
-
-			value, _ := db.Get(string(key))
-
-			conn.Write([]byte{byte(len(value))})
-
-			conn.Write([]byte(value))
+			handleGet(conn)
 		}
 	}
+}
+
+func handleSet(conn net.Conn) {
+	buf := make([]byte, 1)
+
+	log.Println("SET")
+
+	conn.Read(buf)
+	keyLength := buf[0]
+	log.Printf("keyLength: %d\n", keyLength)
+
+	conn.Read(buf)
+	valueLength := buf[0]
+	log.Printf("valueLength: %d\n", valueLength)
+
+	key := make([]byte, keyLength)
+	value := make([]byte, valueLength)
+
+	conn.Read(key)
+	conn.Read(value)
+
+	log.Printf("Setting %s => %s\n", key, value)
+	db.Set(string(key), string(value))
+}
+
+func handleGet(conn net.Conn) {
+	buf := make([]byte, 1)
+
+	log.Println("GET")
+
+	conn.Read(buf)
+	keyLength := buf[0]
+	log.Printf("keyLength: %d\n", keyLength)
+
+	key := make([]byte, keyLength)
+	conn.Read(key)
+
+	value, _ := db.Get(string(key))
+
+	conn.Write([]byte{byte(len(value))})
+
+	conn.Write([]byte(value))
 }
