@@ -8,8 +8,6 @@ import (
 	"github.com/PreetamJinka/lexicon"
 )
 
-var db = lexicon.New()
-
 type instance struct {
 	db       *lexicon.Lexicon
 	replicas map[string]net.Conn
