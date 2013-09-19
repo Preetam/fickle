@@ -36,13 +36,15 @@ func handleConnection(conn net.Conn) {
 			return
 		}
 
-		// Read the first character
-		if buf[0] == 's' {
+		switch buf[0] {
+		case 's':
 			handleSet(conn)
-		}
 
-		if buf[0] == 'g' {
+		case 'g':
 			handleGet(conn)
+
+		case 'd':
+			handleDelete(conn)
 		}
 	}
 }
@@ -82,9 +84,27 @@ func handleGet(conn net.Conn) {
 	key := make([]byte, keyLength)
 	conn.Read(key)
 
-	value, _ := db.Get(string(key))
+	value, _, err := db.Get(string(key))
 
-	conn.Write([]byte{byte(len(value))})
+	if err != nil {
+		conn.Write([]byte{0})
+	} else {
+		conn.Write([]byte{byte(len(value))})
+		conn.Write([]byte(value))
+	}
+}
 
-	conn.Write([]byte(value))
+func handleDelete(conn net.Conn) {
+	buf := make([]byte, 1)
+
+	log.Println("DELETE")
+
+	conn.Read(buf)
+	keyLength := buf[0]
+	log.Printf("keyLength: %d\n", keyLength)
+
+	key := make([]byte, keyLength)
+	conn.Read(key)
+
+	db.Remove(string(key))
 }
