@@ -26,7 +26,7 @@ func (i *instance) Start(addr string) {
 			// handle error
 			continue
 		}
-		go func() { i.handleConnection(conn) }()
+		go i.handleConnection(conn)
 	}
 }
 
