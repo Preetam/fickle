@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 
@@ -9,8 +10,15 @@ import (
 
 var db = lexicon.New()
 
-func main() {
-	ln, err := net.Listen("tcp", ":8080")
+type instance struct {
+	db       *lexicon.Lexicon
+	replicas map[string]net.Conn
+}
+
+func (i *instance) Start(addr string) {
+	i.db = lexicon.New()
+	i.replicas = make(map[string]net.Conn)
+	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		// handle error
 	}
@@ -20,11 +28,28 @@ func main() {
 			// handle error
 			continue
 		}
-		go handleConnection(conn)
+		go func() { i.handleConnection(conn) }()
 	}
 }
 
-func handleConnection(conn net.Conn) {
+func (i *instance) AddReplica(addr string) error {
+	if _, present := i.replicas[addr]; !present {
+		conn, err := net.Dial("tcp", addr)
+		if err != nil {
+			return err
+		} else {
+			i.replicas[addr] = conn
+		}
+	}
+
+	return nil
+}
+
+func main() {
+	new(instance).Start(":8080")
+}
+
+func (i *instance) handleConnection(conn net.Conn) {
 	for {
 		// Check the first character
 		buf := make([]byte, 1)
@@ -38,18 +63,18 @@ func handleConnection(conn net.Conn) {
 
 		switch buf[0] {
 		case 's':
-			handleSet(conn)
+			i.handleSet(conn)
 
 		case 'g':
-			handleGet(conn)
+			i.handleGet(conn)
 
 		case 'd':
-			handleDelete(conn)
+			i.handleDelete(conn)
 		}
 	}
 }
 
-func handleSet(conn net.Conn) {
+func (i *instance) handleSet(conn net.Conn) {
 	buf := make([]byte, 1)
 
 	log.Println("SET")
@@ -69,10 +94,16 @@ func handleSet(conn net.Conn) {
 	conn.Read(value)
 
 	log.Printf("Setting %s => %s\n", key, value)
-	db.Set(string(key), string(value))
+	i.db.Set(string(key), string(value))
+
+	for rep, conn := range i.replicas {
+		command := replicaSetCommandHelper(key, value)
+		log.Printf("Sending to replica %s: %s\n", rep, command)
+		conn.Write(command)
+	}
 }
 
-func handleGet(conn net.Conn) {
+func (i *instance) handleGet(conn net.Conn) {
 	buf := make([]byte, 1)
 
 	log.Println("GET")
@@ -84,7 +115,7 @@ func handleGet(conn net.Conn) {
 	key := make([]byte, keyLength)
 	conn.Read(key)
 
-	value, _, err := db.Get(string(key))
+	value, _, err := i.db.Get(string(key))
 
 	if err != nil {
 		conn.Write([]byte{0})
@@ -94,7 +125,7 @@ func handleGet(conn net.Conn) {
 	}
 }
 
-func handleDelete(conn net.Conn) {
+func (i *instance) handleDelete(conn net.Conn) {
 	buf := make([]byte, 1)
 
 	log.Println("DELETE")
@@ -106,5 +137,10 @@ func handleDelete(conn net.Conn) {
 	key := make([]byte, keyLength)
 	conn.Read(key)
 
-	db.Remove(string(key))
+	i.db.Remove(string(key))
+}
+
+func replicaSetCommandHelper(key, value []byte) []byte {
+	buf := []byte{'s', byte(len(key)), byte(len(value))}
+	return []byte(fmt.Sprintf("%s%s%s", buf, key, value))
 }
