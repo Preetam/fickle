@@ -1,12 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
+	"runtime"
+	"time"
 
 	"github.com/PreetamJinka/lexicon"
 )
+
+var m runtime.MemStats
 
 type instance struct {
 	db       *lexicon.Lexicon
@@ -44,6 +49,13 @@ func (i *instance) AddReplica(addr string) error {
 }
 
 func main() {
+	ticker := time.NewTicker(time.Second * 5)
+	go func() {
+		for _ = range ticker.C {
+			dumpStats()
+		}
+	}()
+
 	new(instance).Start(":8080")
 }
 
@@ -141,4 +153,12 @@ func (i *instance) handleDelete(conn net.Conn) {
 func replicaSetCommandHelper(key, value []byte) []byte {
 	buf := []byte{'s', byte(len(key)), byte(len(value))}
 	return []byte(fmt.Sprintf("%s%s%s", buf, key, value))
+}
+
+func dumpStats() {
+	runtime.ReadMemStats(&m)
+	marshalled, err := json.Marshal(&m)
+	if err == nil {
+		log.Println("\n\n", string(marshalled))
+	}
 }
