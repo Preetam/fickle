@@ -98,7 +98,7 @@ func (i *instance) handleSet(conn net.Conn) {
 	conn.Read(key)
 	conn.Read(value)
 
-	i.db.Set(string(key), string(value))
+	i.db.Set(string(key), string(value), -1)
 
 	for _, conn := range i.replicas {
 		command := replicaSetCommandHelper(key, value)
