@@ -148,11 +148,22 @@ func (i *instance) handleDelete(conn net.Conn) {
 	conn.Read(key)
 
 	i.db.Remove(string(key))
+
+	for rep, conn := range i.replicas {
+		command := replicaDeleteCommandHelper(key)
+		log.Printf("Sending to replica %s: %s\n", rep, command)
+		conn.Write(command)
+	}
 }
 
 func replicaSetCommandHelper(key, value []byte) []byte {
 	buf := []byte{'s', byte(len(key)), byte(len(value))}
 	return []byte(fmt.Sprintf("%s%s%s", buf, key, value))
+}
+
+func replicaDeleteCommandHelper(key []byte) []byte {
+	buf := []byte{'d', byte(len(key))}
+	return []byte(fmt.Sprintf("%s%s", buf, key))
 }
 
 func dumpStats() {
