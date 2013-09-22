@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"runtime"
-	"time"
 
 	"github.com/PreetamJinka/lexicon"
 )
@@ -49,13 +48,7 @@ func (i *instance) AddReplica(addr string) error {
 }
 
 func main() {
-	ticker := time.NewTicker(time.Second * 5)
-	go func() {
-		for _ = range ticker.C {
-			dumpStats()
-		}
-	}()
-
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	new(instance).Start(":8080")
 }
 
@@ -80,6 +73,12 @@ func (i *instance) handleConnection(conn net.Conn) {
 
 		case 'd':
 			i.handleDelete(conn)
+
+		case '0':
+			dumpStats()
+
+		case '1':
+			runtime.GC()
 		}
 	}
 }
@@ -87,15 +86,11 @@ func (i *instance) handleConnection(conn net.Conn) {
 func (i *instance) handleSet(conn net.Conn) {
 	buf := make([]byte, 1)
 
-	log.Println("SET")
-
 	conn.Read(buf)
 	keyLength := buf[0]
-	log.Printf("keyLength: %d\n", keyLength)
 
 	conn.Read(buf)
 	valueLength := buf[0]
-	log.Printf("valueLength: %d\n", valueLength)
 
 	key := make([]byte, keyLength)
 	value := make([]byte, valueLength)
@@ -103,12 +98,10 @@ func (i *instance) handleSet(conn net.Conn) {
 	conn.Read(key)
 	conn.Read(value)
 
-	log.Printf("Setting %s => %s\n", key, value)
 	i.db.Set(string(key), string(value))
 
-	for rep, conn := range i.replicas {
+	for _, conn := range i.replicas {
 		command := replicaSetCommandHelper(key, value)
-		log.Printf("Sending to replica %s: %s\n", rep, command)
 		conn.Write(command)
 	}
 }
@@ -116,11 +109,8 @@ func (i *instance) handleSet(conn net.Conn) {
 func (i *instance) handleGet(conn net.Conn) {
 	buf := make([]byte, 1)
 
-	log.Println("GET")
-
 	conn.Read(buf)
 	keyLength := buf[0]
-	log.Printf("keyLength: %d\n", keyLength)
 
 	key := make([]byte, keyLength)
 	conn.Read(key)
@@ -138,20 +128,16 @@ func (i *instance) handleGet(conn net.Conn) {
 func (i *instance) handleDelete(conn net.Conn) {
 	buf := make([]byte, 1)
 
-	log.Println("DELETE")
-
 	conn.Read(buf)
 	keyLength := buf[0]
-	log.Printf("keyLength: %d\n", keyLength)
 
 	key := make([]byte, keyLength)
 	conn.Read(key)
 
 	i.db.Remove(string(key))
 
-	for rep, conn := range i.replicas {
+	for _, conn := range i.replicas {
 		command := replicaDeleteCommandHelper(key)
-		log.Printf("Sending to replica %s: %s\n", rep, command)
 		conn.Write(command)
 	}
 }
