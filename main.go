@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"log"
 	"net"
 	"runtime"
@@ -48,7 +49,10 @@ func (i *instance) AddReplica(addr string) error {
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	new(instance).Start(":8080")
+
+	listenAddr := flag.String("listen", ":8080", "TCP address to listen on")
+
+	new(instance).Start(*listenAddr)
 }
 
 func (i *instance) handleConnection(conn net.Conn) {
