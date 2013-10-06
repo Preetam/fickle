@@ -51,6 +51,7 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	listenAddr := flag.String("listen", ":8080", "TCP address to listen on")
+	flag.Parse()
 
 	new(instance).Start(*listenAddr)
 }
