@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"log"
 	"net"
@@ -9,8 +8,6 @@ import (
 
 	"github.com/PreetamJinka/lexicon"
 )
-
-var m runtime.MemStats
 
 type instance struct {
 	db       *lexicon.Lexicon
@@ -51,9 +48,14 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	listenAddr := flag.String("listen", ":8080", "TCP address to listen on")
+	debugHTTP := flag.Bool("debug-http", false, "Start an HTTP server for debugging")
 	flag.Parse()
 
-	new(instance).Start(*listenAddr)
+	i := new(instance)
+	if *debugHTTP {
+		StartHttpDebug()
+	}
+	i.Start(*listenAddr)
 }
 
 func (i *instance) handleConnection(conn net.Conn) {
@@ -78,19 +80,8 @@ func (i *instance) handleConnection(conn net.Conn) {
 		case 'd':
 			i.handleDelete(conn)
 
-		case '0':
-			dumpStats()
-
 		case '1':
 			runtime.GC()
 		}
-	}
-}
-
-func dumpStats() {
-	runtime.ReadMemStats(&m)
-	marshalled, err := json.Marshal(&m)
-	if err == nil {
-		log.Println("\n\n", string(marshalled))
 	}
 }
