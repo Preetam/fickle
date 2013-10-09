@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net"
+
+	"github.com/PreetamJinka/lexicon"
 )
 
 func replicaDeleteCommandHelper(key []byte) []byte {
@@ -19,7 +21,7 @@ func (i *instance) handleDelete(conn net.Conn) {
 	key := make([]byte, keyLength)
 	conn.Read(key)
 
-	i.db.Remove(string(key))
+	i.db.Remove(lexicon.ComparableString(key))
 
 	for _, conn := range i.replicas {
 		command := replicaDeleteCommandHelper(key)
