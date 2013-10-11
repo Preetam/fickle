@@ -10,11 +10,13 @@ import (
 )
 
 type instance struct {
-	db       *lexicon.Lexicon
-	replicas map[string]net.Conn
+	db         *lexicon.Lexicon
+	replicas   map[string]net.Conn
+	listenAddr string
 }
 
 func (i *instance) Start(addr string) {
+	i.listenAddr = addr
 	i.db = lexicon.New()
 	i.replicas = make(map[string]net.Conn)
 	ln, err := net.Listen("tcp", addr)
@@ -77,8 +79,8 @@ func (i *instance) handleConnection(conn net.Conn) {
 		case 'g':
 			i.handleGet(conn)
 
-		case 'd':
-			i.handleDelete(conn)
+		case 'c':
+			i.handleClear(conn)
 
 		case '1':
 			runtime.GC()

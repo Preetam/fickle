@@ -25,12 +25,12 @@ func TestSimpleSetGetDelete(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, err = conn.Write([]byte("s\x03\x06foofoobar"))
+	_, err = conn.Write([]byte("s\x01\x03\x06foofoobar"))
 	if err != nil {
 		t.Error(err)
 	}
 
-	_, err = conn.Write([]byte("g\x03foo"))
+	_, err = conn.Write([]byte("g\x01\x03foo"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -45,12 +45,12 @@ func TestSimpleSetGetDelete(t *testing.T) {
 		t.Errorf(`Expected value to be "foobar" got "%v"`, string(value))
 	}
 
-	_, err = conn.Write([]byte("d\x03foo"))
+	_, err = conn.Write([]byte("c\x01\x03foo"))
 	if err != nil {
 		t.Error(err)
 	}
 
-	_, err = conn.Write([]byte("g\x03foo"))
+	_, err = conn.Write([]byte("g\x01\x03foo"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -72,14 +72,14 @@ func TestReplica(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, err = conn.Write([]byte("s\x03\x06foofoobar"))
+	_, err = conn.Write([]byte("s\x01\x03\x06foofoobar"))
 	if err != nil {
 		t.Error(err)
 	}
 	time.Sleep(time.Second)
 	conn, err = net.Dial("tcp", ":8081")
 
-	_, err = conn.Write([]byte("g\x03foo"))
+	_, err = conn.Write([]byte("g\x01\x03foo"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -103,7 +103,7 @@ func TestReplicaSimpleSetGetDelete(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, err = conn.Write([]byte("s\x03\x06foofoobar"))
+	_, err = conn.Write([]byte("s\x01\x03\x06foofoobar"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -111,7 +111,7 @@ func TestReplicaSimpleSetGetDelete(t *testing.T) {
 	time.Sleep(time.Second)
 	conn, err = net.Dial("tcp", ":8081")
 
-	_, err = conn.Write([]byte("g\x03foo"))
+	_, err = conn.Write([]byte("g\x01\x03foo"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -128,7 +128,7 @@ func TestReplicaSimpleSetGetDelete(t *testing.T) {
 
 	conn, err = net.Dial("tcp", ":8080")
 
-	_, err = conn.Write([]byte("d\x03foo"))
+	_, err = conn.Write([]byte("c\x01\x03foo"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -136,7 +136,7 @@ func TestReplicaSimpleSetGetDelete(t *testing.T) {
 	time.Sleep(time.Second)
 	conn, err = net.Dial("tcp", ":8081")
 
-	_, err = conn.Write([]byte("g\x03foo"))
+	_, err = conn.Write([]byte("g\x01\x03foo"))
 	if err != nil {
 		t.Error(err)
 	}

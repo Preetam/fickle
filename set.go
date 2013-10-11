@@ -1,34 +1,40 @@
 package main
 
 import (
-	"fmt"
 	"net"
 )
 
-func replicaSetCommandHelper(key, value []byte) []byte {
-	buf := []byte{'s', byte(len(key)), byte(len(value))}
-	return []byte(fmt.Sprintf("%s%s%s", buf, key, value))
-}
-
 func (i *instance) handleSet(conn net.Conn) {
+	repcmd := []byte("s")
 	buf := make([]byte, 1)
 
 	conn.Read(buf)
-	keyLength := buf[0]
+	repcmd = append(repcmd, buf...)
 
-	conn.Read(buf)
-	valueLength := buf[0]
+	for keyCount := int(buf[0]); keyCount > 0; keyCount-- {
+		conn.Read(buf)
+		repcmd = append(repcmd, buf...)
 
-	key := make([]byte, keyLength)
-	value := make([]byte, valueLength)
+		keyLength := buf[0]
 
-	conn.Read(key)
-	conn.Read(value)
+		conn.Read(buf)
+		repcmd = append(repcmd, buf...)
 
-	i.db.Set(ComparableString(key), ComparableString(value))
+		valueLength := buf[0]
 
-	for _, conn := range i.replicas {
-		command := replicaSetCommandHelper(key, value)
-		conn.Write(command)
+		key := make([]byte, keyLength)
+		value := make([]byte, valueLength)
+
+		conn.Read(key)
+		repcmd = append(repcmd, key...)
+
+		conn.Read(value)
+		repcmd = append(repcmd, value...)
+
+		i.db.Set(ComparableString(key), ComparableString(value))
+	}
+
+	for _, repConn := range i.replicas {
+		repConn.Write(repcmd)
 	}
 }
