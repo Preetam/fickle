@@ -2,8 +2,6 @@ package main
 
 import (
 	"net"
-
-	"github.com/PreetamJinka/lexicon"
 )
 
 func (i *instance) handleGet(conn net.Conn) {
@@ -15,12 +13,12 @@ func (i *instance) handleGet(conn net.Conn) {
 	key := make([]byte, keyLength)
 	conn.Read(key)
 
-	value, _, err := i.db.Get(lexicon.ComparableString(key))
+	value, err := i.db.Get(ComparableString(key))
 
 	if err != nil {
 		conn.Write([]byte{0})
 	} else {
-		conn.Write([]byte{byte(len(value))})
-		conn.Write([]byte(value))
+		conn.Write([]byte{byte(len(value.(ComparableString)))})
+		conn.Write([]byte(value.(ComparableString)))
 	}
 }
