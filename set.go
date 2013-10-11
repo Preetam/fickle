@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"net"
-
-	"github.com/PreetamJinka/lexicon"
 )
 
 func replicaSetCommandHelper(key, value []byte) []byte {
@@ -27,7 +25,7 @@ func (i *instance) handleSet(conn net.Conn) {
 	conn.Read(key)
 	conn.Read(value)
 
-	i.db.Set(lexicon.ComparableString(key), lexicon.ComparableString(value), -1)
+	i.db.Set(ComparableString(key), ComparableString(value))
 
 	for _, conn := range i.replicas {
 		command := replicaSetCommandHelper(key, value)
