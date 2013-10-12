@@ -5,6 +5,9 @@ import (
 )
 
 func (i *instance) handleClear(conn net.Conn) {
+
+	// repcmd is basically the same
+	// command we're getting.
 	repcmd := []byte("c")
 	buf := make([]byte, 1)
 
@@ -25,6 +28,7 @@ func (i *instance) handleClear(conn net.Conn) {
 		i.db.Remove(ComparableString(key))
 
 		for _, repConn := range i.replicas {
+			// echo the repcmd to every replica
 			repConn.Write(repcmd)
 		}
 

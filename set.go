@@ -5,6 +5,9 @@ import (
 )
 
 func (i *instance) handleSet(conn net.Conn) {
+
+	// repcmd is basically the same
+	// command we're getting.
 	repcmd := []byte("s")
 	buf := make([]byte, 1)
 
@@ -35,6 +38,7 @@ func (i *instance) handleSet(conn net.Conn) {
 	}
 
 	for _, repConn := range i.replicas {
+		// echo the repcmd to every replica
 		repConn.Write(repcmd)
 	}
 }

@@ -5,6 +5,8 @@ import (
 )
 
 func (i *instance) handleGet(conn net.Conn) {
+
+	// Read the key count
 	buf := make([]byte, 1)
 	conn.Read(buf)
 
@@ -18,6 +20,7 @@ func (i *instance) handleGet(conn net.Conn) {
 		value, err := i.db.Get(ComparableString(key))
 
 		if err != nil {
+			// err => key not found
 			conn.Write([]byte{0})
 		} else {
 			conn.Write([]byte{byte(len(value.(ComparableString)))})

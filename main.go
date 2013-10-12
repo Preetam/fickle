@@ -82,6 +82,7 @@ func (i *instance) handleConnection(conn net.Conn) {
 		case 'c':
 			i.handleClear(conn)
 
+		// Triggers the garbage collector
 		case '1':
 			runtime.GC()
 		}
