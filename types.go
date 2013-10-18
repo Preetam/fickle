@@ -1,9 +1,5 @@
 package main
 
-import (
-	"github.com/PreetamJinka/orderedlist"
-)
-
 type ComparableString string
 
 func (cs ComparableString) Compare(c interface{}) int {
