@@ -81,5 +81,6 @@ func (i *instance) handleConnection(conn net.Conn) {
 
 		case 'c':
 			i.handleClear(conn)
+		}
 	}
 }
