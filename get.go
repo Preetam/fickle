@@ -17,14 +17,14 @@ func (i *instance) handleGet(conn net.Conn) {
 		key := make([]byte, keyLength)
 		conn.Read(key)
 
-		value, err := i.db.Get(ComparableString(key))
+		value, err := i.getHelper(string(key))
 
 		if err != nil {
 			// err => key not found
 			conn.Write([]byte{0})
 		} else {
-			conn.Write([]byte{byte(len(value.(ComparableString)))})
-			conn.Write([]byte(value.(ComparableString)))
+			conn.Write([]byte{byte(len(value))})
+			conn.Write([]byte(value))
 		}
 	}
 }

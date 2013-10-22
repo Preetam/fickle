@@ -23,9 +23,9 @@ func (i *instance) handleClear(conn net.Conn) {
 		key := make([]byte, keyLength)
 
 		conn.Read(key)
-		repcmd = append(repcmd, key...)
+		repcmd = append(repcmd, []byte(key)...)
 
-		i.db.Remove(ComparableString(key))
+		i.removeHelper(string(key))
 
 		for _, repConn := range i.replicas {
 			// echo the repcmd to every replica

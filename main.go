@@ -33,6 +33,23 @@ func (i *instance) Start(addr string) {
 	}
 }
 
+func (i *instance) setHelper(key, val string) {
+	i.db.Set(ComparableString(key), ComparableString(val))
+}
+
+func (i *instance) removeHelper(key string) {
+	i.db.Remove(ComparableString(key))
+}
+
+func (i *instance) getHelper(key string) (string, error) {
+	cs, err := i.db.Get(ComparableString(key))
+	if err != nil {
+		return "", err
+	}
+
+	return string(cs.(ComparableString)), nil
+}
+
 func (i *instance) AddReplica(addr string) error {
 	if _, present := i.replicas[addr]; !present {
 		conn, err := net.Dial("tcp", addr)

@@ -34,7 +34,7 @@ func (i *instance) handleSet(conn net.Conn) {
 		conn.Read(value)
 		repcmd = append(repcmd, value...)
 
-		i.db.Set(ComparableString(key), ComparableString(value))
+		i.setHelper(string(key), string(value))
 	}
 
 	for _, repConn := range i.replicas {
