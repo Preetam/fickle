@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"net"
 
 	"github.com/PreetamJinka/lexicon"
@@ -15,12 +16,14 @@ type Instance struct {
 }
 
 func NewInstance(addr string) *Instance {
-	return &Instance{
+	i := &Instance{
 		db:         lexicon.New(),
 		replicas:   make(map[string]net.Conn),
 		listenAddr: addr,
-		connman:    NewConnMan(),
 	}
+	i.connman = NewConnMan(i)
+
+	return i
 }
 
 func (i *Instance) Start() {
@@ -39,4 +42,89 @@ func (i *Instance) Start() {
 		// connection manager.
 		i.connman.ConnChan <- conn
 	}
+}
+
+// This is a pretty lame way to do it,
+// but I'll fix it later :)
+func (i *Instance) Execute(c Command) (byte, []byte) {
+	switch c.Type {
+	case OP_GET:
+		return i.Get(c.Var1)
+	case OP_SET:
+		return i.Set(c.Var1, c.Var2)
+	case OP_CLEAR:
+		return i.Clear(c.Var1)
+	case OP_GETRANGE:
+		return i.GetRange(c.Var1, c.Var2)
+	case OP_CLEARRANGE:
+		return i.ClearRange(c.Var1, c.Var2)
+	}
+
+	return ERR_INVALID_OP, nil
+}
+
+func (i *Instance) Get(key ComparableString) (resErr byte, resBody []byte) {
+	r, err := i.db.Get(key)
+	if err == lexicon.ErrKeyNotPresent {
+		resErr = ERR_NO_ERROR
+	}
+
+	cs, ok := r.(ComparableString)
+	if !ok {
+		resErr = ERR_INTERNAL
+		return
+	}
+
+	resBody = comparableStringToByteArray(cs)
+
+	return
+}
+
+func (i *Instance) Set(key ComparableString, val ComparableString) (resErr byte, resBody []byte) {
+	i.db.Set(key, val)
+
+	resErr = ERR_NO_ERROR
+	return
+}
+
+func (i *Instance) Clear(key ComparableString) (resErr byte, resBody []byte) {
+	i.db.Remove(key)
+	resErr = ERR_NO_ERROR
+	return
+}
+
+func (i *Instance) GetRange(start, end ComparableString) (resErr byte, resBody []byte) {
+	kv := i.db.GetRange(start, end)
+	resErr = ERR_NO_ERROR
+	resBody = keyValueArrayToByteArray(kv)
+
+	return
+}
+
+func (i *Instance) ClearRange(start, end ComparableString) (resErr byte, resBody []byte) {
+	i.db.ClearRange(start, end)
+	resErr = ERR_NO_ERROR
+
+	return
+}
+
+func comparableStringToByteArray(cs ComparableString) []byte {
+	size := uint16(len(cs))
+	sizeBuf := make([]byte, 2)
+
+	binary.LittleEndian.PutUint16(sizeBuf, size)
+	return append(sizeBuf, []byte(cs)...)
+}
+
+func keyValueArrayToByteArray(kv []lexicon.KeyValue) []byte {
+	size := uint64(len(kv))
+	out := make([]byte, 8)
+	binary.LittleEndian.PutUint64(out, size)
+
+	for _, i := range kv {
+		out = append(out, comparableStringToByteArray(i.Key.(ComparableString))...)
+		out = append(out, comparableStringToByteArray(i.Value.(ComparableString))...)
+	}
+
+	return out
 }

@@ -12,9 +12,9 @@ func main() {
 	debugHTTP := flag.Bool("debug-http", false, "Start an HTTP server for debugging")
 	flag.Parse()
 
-	if *debugHTTP {
-		StartHttpDebug()
-	}
 	i := NewInstance(*listenAddr)
+	if *debugHTTP {
+		go StartHttpDebug(i)
+	}
 	i.Start()
 }
