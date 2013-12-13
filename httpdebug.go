@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"runtime"
@@ -9,7 +10,7 @@ import (
 
 var m runtime.MemStats
 
-func StartHttpDebug() {
+func StartHttpDebug(i *Instance) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		enc := json.NewEncoder(w)
 		runtime.ReadMemStats(&m)
@@ -17,6 +18,9 @@ func StartHttpDebug() {
 		if err != nil {
 			log.Println(err)
 		}
+	})
+	http.HandleFunc("/lexicon", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, i.db.GetRange(ComparableString("\x00"), ComparableString("\xff")))
 	})
 	log.Fatal(http.ListenAndServe(":8081", nil))
 }
