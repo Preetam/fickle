@@ -2,66 +2,8 @@ package main
 
 import (
 	"flag"
-	"log"
-	"net"
 	"runtime"
-
-	"github.com/PreetamJinka/lexicon"
 )
-
-type instance struct {
-	db         *lexicon.Lexicon
-	replicas   map[string]net.Conn
-	listenAddr string
-}
-
-func (i *instance) Start(addr string) {
-	i.listenAddr = addr
-	i.db = lexicon.New()
-	i.replicas = make(map[string]net.Conn)
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		// handle error
-	}
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			// handle error
-			continue
-		}
-		go i.handleConnection(conn)
-	}
-}
-
-func (i *instance) setHelper(key, val string) {
-	i.db.Set(ComparableString(key), ComparableString(val))
-}
-
-func (i *instance) removeHelper(key string) {
-	i.db.Remove(ComparableString(key))
-}
-
-func (i *instance) getHelper(key string) (string, error) {
-	cs, err := i.db.Get(ComparableString(key))
-	if err != nil {
-		return "", err
-	}
-
-	return string(cs.(ComparableString)), nil
-}
-
-func (i *instance) AddReplica(addr string) error {
-	if _, present := i.replicas[addr]; !present {
-		conn, err := net.Dial("tcp", addr)
-		if err != nil {
-			return err
-		} else {
-			i.replicas[addr] = conn
-		}
-	}
-
-	return nil
-}
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -70,34 +12,9 @@ func main() {
 	debugHTTP := flag.Bool("debug-http", false, "Start an HTTP server for debugging")
 	flag.Parse()
 
-	i := new(instance)
 	if *debugHTTP {
 		StartHttpDebug()
 	}
-	i.Start(*listenAddr)
-}
-
-func (i *instance) handleConnection(conn net.Conn) {
-	for {
-		// Check the first character
-		buf := make([]byte, 1)
-
-		// Read the first character
-		_, err := conn.Read(buf)
-		if err != nil {
-			log.Println("Error reading: ", err.Error())
-			return
-		}
-
-		switch buf[0] {
-		case 's':
-			i.handleSet(conn)
-
-		case 'g':
-			i.handleGet(conn)
-
-		case 'c':
-			i.handleClear(conn)
-		}
-	}
+	i := NewInstance(*listenAddr)
+	i.Start()
 }
