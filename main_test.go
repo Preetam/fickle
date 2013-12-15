@@ -11,7 +11,7 @@ import (
 
 func commandGenerator(op Operation, vars ...string) string {
 	buf := new(bytes.Buffer)
-	binary.Write(buf, binary.LittleEndian, byte(0x14))
+	binary.Write(buf, binary.LittleEndian, byte(MagicByte))
 	binary.Write(buf, binary.LittleEndian, byte(op))
 	for _, v := range vars {
 		binary.Write(buf, binary.LittleEndian, uint16(len(v)))
@@ -47,7 +47,7 @@ func read(conn net.Conn, key string) string {
 func verify(conn net.Conn) bool {
 	b := make([]byte, 1)
 	conn.Read(b)
-	return b[0] == 0
+	return b[0] == ERR_NO_ERROR
 }
 
 func clearAll(conn net.Conn) {
@@ -57,7 +57,7 @@ func clearAll(conn net.Conn) {
 func Test1(t *testing.T) {
 	i := NewInstance(":12345")
 	go i.Start()
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Millisecond * 100) // Wait for it to start up
 	conn, err := net.Dial("tcp", ":12345")
 	if err != nil {
 		t.Error(err)
