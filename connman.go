@@ -75,6 +75,7 @@ func (c *ConnMan) handleConnection(conn net.Conn) {
 		}
 
 		var1 := make([]byte, header.Var1_length)
+
 		var2 := make([]byte, header.Var2_length)
 
 		_, err = conn.Read(var1)
@@ -82,12 +83,13 @@ func (c *ConnMan) handleConnection(conn net.Conn) {
 			conn.Write([]byte{ERR_BAD_BODY})
 			return
 		}
-		_, err = conn.Read(var2)
-		if err != nil {
-			conn.Write([]byte{ERR_BAD_BODY})
-			return
+		if header.Var2_length > 0 {
+			_, err = conn.Read(var2)
+			if err != nil {
+				conn.Write([]byte{ERR_BAD_BODY})
+				return
+			}
 		}
-
 		conn.Write(RunCommand(c.instance, header.Opcode, var1, var2))
 	}
 }

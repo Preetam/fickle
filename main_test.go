@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"net"
@@ -8,22 +9,29 @@ import (
 	"time"
 )
 
+func commandGenerator(op Operation, vars ...string) string {
+	buf := new(bytes.Buffer)
+	binary.Write(buf, binary.LittleEndian, byte(0x14))
+	binary.Write(buf, binary.LittleEndian, byte(op))
+	for _, v := range vars {
+		binary.Write(buf, binary.LittleEndian, uint16(len(v)))
+	}
+	// Pad until we have the minimum header length
+	for buf.Len() < HEADER_LEN {
+		buf.WriteByte(0x0)
+	}
+	for _, v := range vars {
+		buf.WriteString(v)
+	}
+	return buf.String()
+}
+
 func write(conn net.Conn, key string, value string) {
-	binary.Write(conn, binary.LittleEndian, byte(0x14))         // don't change this
-	binary.Write(conn, binary.LittleEndian, byte(1))            // 1 => set, 2 => clear
-	binary.Write(conn, binary.LittleEndian, uint16(len(key)))   // length of the key
-	binary.Write(conn, binary.LittleEndian, uint16(len(value))) // length of the value
-	fmt.Fprintf(conn, key)                                      // the key
-	fmt.Fprintf(conn, value)                                    // the value
+	fmt.Fprintf(conn, commandGenerator(OP_SET, key, value))
 }
 
 func read(conn net.Conn, key string) string {
-	binary.Write(conn, binary.LittleEndian, byte(0x14))       // don't change this
-	binary.Write(conn, binary.LittleEndian, byte(0))          // 1 => set, 2 => clear
-	binary.Write(conn, binary.LittleEndian, uint16(len(key))) // length of the key
-	binary.Write(conn, binary.LittleEndian, uint16(1))        // length of the value
-	fmt.Fprintf(conn, key)                                    // the key
-	fmt.Fprintf(conn, "0")
+	fmt.Fprintf(conn, commandGenerator(OP_GET, key))
 	if verify(conn) {
 		var size uint16
 		binary.Read(conn, binary.LittleEndian, &size)
@@ -43,12 +51,7 @@ func verify(conn net.Conn) bool {
 }
 
 func clearAll(conn net.Conn) {
-	binary.Write(conn, binary.LittleEndian, byte(0x14)) // don't change this
-	binary.Write(conn, binary.LittleEndian, byte(4))    // 1 => set, 2 => clear
-	binary.Write(conn, binary.LittleEndian, uint16(1))  // length of the key
-	binary.Write(conn, binary.LittleEndian, uint16(1))  // length of the value
-	fmt.Fprintf(conn, "\x00")                           // the key
-	fmt.Fprintf(conn, "\xff")                           // the value
+	fmt.Fprintf(conn, commandGenerator(OP_CLEARRANGE, "\x00", "\xff"))
 }
 
 func Test1(t *testing.T) {

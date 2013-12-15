@@ -1,6 +1,7 @@
 package main
 
 const MagicByte = 0x14
+const HEADER_LEN = 6
 
 const (
 	ERR_NO_ERROR byte = iota
