@@ -7,6 +7,27 @@ import (
 	"github.com/PreetamJinka/lexicon"
 )
 
+func compareStrings(a, b interface{}) (result int) {
+	defer func() {
+		if r := recover(); r != nil {
+			result = 0
+		}
+	}()
+
+	aStr := a.(string)
+	bStr := b.(string)
+
+	if aStr > bStr {
+		result = 1
+	}
+
+	if aStr < bStr {
+		return -1
+	}
+
+	return
+}
+
 // Instance is a fickle instance
 type Instance struct {
 	db         *lexicon.Lexicon
@@ -17,7 +38,7 @@ type Instance struct {
 
 func NewInstance(addr string) *Instance {
 	i := &Instance{
-		db:         lexicon.New(),
+		db:         lexicon.New(compareStrings),
 		replicas:   make(map[string]net.Conn),
 		listenAddr: addr,
 	}
