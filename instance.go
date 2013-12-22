@@ -38,6 +38,7 @@ type Instance struct {
 	listenAddr string
 	connman    *ConnMan
 	commandLog string
+	file       *os.File
 }
 
 func NewInstance(addr string, log string) *Instance {
@@ -45,9 +46,17 @@ func NewInstance(addr string, log string) *Instance {
 		db:         lexicon.New(compareStrings),
 		replicas:   make(map[string]net.Conn),
 		listenAddr: addr,
-		commandLog: log,
 	}
 	i.connman = NewConnMan(i)
+
+	if log != "" {
+		f, err := os.OpenFile(log, os.O_RDWR, 0777)
+		if err != nil {
+
+		}
+
+		i.file = f
+	}
 
 	return i
 }
@@ -55,6 +64,7 @@ func NewInstance(addr string, log string) *Instance {
 func (i *Instance) Start() {
 	defer func() {
 		if r := recover(); r != nil {
+			i.file.Close()
 			log.Println("Recovered from a panic:", r)
 		}
 	}()
@@ -64,15 +74,14 @@ func (i *Instance) Start() {
 	}
 
 	// Reload from the log
-	if i.commandLog != "" {
+	if i.file != nil {
 		conn, err := net.Dial("tcp", i.listenAddr)
 		if err == nil {
-			f, err := os.Open(i.commandLog)
-			if err == nil {
-				_, err := io.Copy(conn, f)
-				if err != nil {
-					log.Println("Error reading from command log:", err)
-				}
+			_, err := io.Copy(conn, i.file)
+			if err != nil {
+				log.Println("Error reading from command log:", err)
+			} else {
+				i.commandLog = i.file.Name()
 			}
 		}
 	}
@@ -131,18 +140,13 @@ func (i *Instance) LogCommand(c Command) error {
 		cmdStr = GenerateCommand(c.Type, c.Var1)
 	}
 
-	f, err := os.Create(i.commandLog)
+	_, err := i.file.WriteString(cmdStr)
 	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	_, err = f.WriteString(cmdStr)
-	if err != nil {
+		log.Println(err)
 		return err
 	}
 
-	f.Sync()
+	i.file.Sync()
 
 	return nil
 }
