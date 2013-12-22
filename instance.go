@@ -101,8 +101,11 @@ func (i *Instance) Start() {
 
 func (i *Instance) AddReplica(address string) {
 	conn, err := net.Dial("tcp", address)
-	if err != nil {
-		i.replicas[address].conn = &conn
+	if err == nil {
+		log.Println("Connected to replica:", address)
+		i.replicas[address] = &Replica{
+			conn: &conn,
+		}
 	}
 }
 
