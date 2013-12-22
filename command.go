@@ -2,15 +2,15 @@ package main
 
 type Command struct {
 	Type Operation
-	Var1 ComparableString
-	Var2 ComparableString
+	Var1 string
+	Var2 string
 }
 
 func GenerateCommand(op byte, var1 []byte, var2 []byte) Command {
 	return Command{
 		Type: Operation(op),
-		Var1: ComparableString(var1),
-		Var2: ComparableString(var2),
+		Var1: string(var1),
+		Var2: string(var2),
 	}
 }
 

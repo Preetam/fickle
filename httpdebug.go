@@ -20,7 +20,7 @@ func StartHttpDebug(i *Instance) {
 		}
 	})
 	http.HandleFunc("/lexicon", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, i.db.GetRange(ComparableString("\x00"), ComparableString("\xff")))
+		fmt.Fprintln(w, i.db.GetRange("\x00", "\xff"))
 	})
 	log.Fatal(http.ListenAndServe(":8081", nil))
 }

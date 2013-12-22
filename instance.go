@@ -84,13 +84,13 @@ func (i *Instance) Execute(c Command) (byte, []byte) {
 	return ERR_INVALID_OP, nil
 }
 
-func (i *Instance) Get(key ComparableString) (resErr byte, resBody []byte) {
+func (i *Instance) Get(key string) (resErr byte, resBody []byte) {
 	r, err := i.db.Get(key)
 	if err == lexicon.ErrKeyNotPresent {
 		resErr = ERR_NO_ERROR
 	}
 
-	cs, ok := r.(ComparableString)
+	cs, ok := r.(string)
 	if !ok {
 		resErr = ERR_INTERNAL
 		return
@@ -101,20 +101,20 @@ func (i *Instance) Get(key ComparableString) (resErr byte, resBody []byte) {
 	return
 }
 
-func (i *Instance) Set(key ComparableString, val ComparableString) (resErr byte, resBody []byte) {
+func (i *Instance) Set(key, val string) (resErr byte, resBody []byte) {
 	i.db.Set(key, val)
 
 	resErr = ERR_NO_ERROR
 	return
 }
 
-func (i *Instance) Clear(key ComparableString) (resErr byte, resBody []byte) {
+func (i *Instance) Clear(key string) (resErr byte, resBody []byte) {
 	i.db.Remove(key)
 	resErr = ERR_NO_ERROR
 	return
 }
 
-func (i *Instance) GetRange(start, end ComparableString) (resErr byte, resBody []byte) {
+func (i *Instance) GetRange(start, end string) (resErr byte, resBody []byte) {
 	kv := i.db.GetRange(start, end)
 	resErr = ERR_NO_ERROR
 	resBody = keyValueArrayToByteArray(kv)
@@ -122,14 +122,14 @@ func (i *Instance) GetRange(start, end ComparableString) (resErr byte, resBody [
 	return
 }
 
-func (i *Instance) ClearRange(start, end ComparableString) (resErr byte, resBody []byte) {
+func (i *Instance) ClearRange(start, end string) (resErr byte, resBody []byte) {
 	i.db.ClearRange(start, end)
 	resErr = ERR_NO_ERROR
 
 	return
 }
 
-func comparableStringToByteArray(cs ComparableString) []byte {
+func comparableStringToByteArray(cs string) []byte {
 	size := uint16(len(cs))
 	sizeBuf := make([]byte, 2)
 
@@ -143,8 +143,8 @@ func keyValueArrayToByteArray(kv []lexicon.KeyValue) []byte {
 	binary.LittleEndian.PutUint64(out, size)
 
 	for _, i := range kv {
-		out = append(out, comparableStringToByteArray(i.Key.(ComparableString))...)
-		out = append(out, comparableStringToByteArray(i.Value.(ComparableString))...)
+		out = append(out, comparableStringToByteArray(i.Key.(string))...)
+		out = append(out, comparableStringToByteArray(i.Value.(string))...)
 	}
 
 	return out
