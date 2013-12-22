@@ -36,6 +36,7 @@ func (c *ConnMan) Start() {
 }
 
 func (c *ConnMan) handleConnection(conn net.Conn) {
+
 	// If something goes wrong, we'll just return
 	// and close the connection.
 	defer conn.Close()
