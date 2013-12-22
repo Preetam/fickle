@@ -61,11 +61,11 @@ func TestCommandLog(t *testing.T) {
 		t.Fatal("Couldn't open temp file")
 	}
 
-	i := NewInstance(":12345", f.Name())
+	i := NewInstance(":12346", f.Name())
 	go i.Start()
 
 	time.Sleep(time.Millisecond * 100) // Wait for it to start up
-	conn, err := net.Dial("tcp", ":12345")
+	conn, err := net.Dial("tcp", ":12346")
 	if err != nil {
 		t.Error(err)
 	}
@@ -79,11 +79,11 @@ func TestCommandLog(t *testing.T) {
 
 	conn.Close()
 
-	i = NewInstance(":12346", f.Name())
+	i = NewInstance(":12347", f.Name())
 	go i.Start()
 
 	time.Sleep(time.Millisecond * 100) // Wait for it to start up
-	conn, err = net.Dial("tcp", ":12346")
+	conn, err = net.Dial("tcp", ":12347")
 	if err != nil {
 		t.Error(err)
 	}
