@@ -22,8 +22,10 @@ func main() {
 	}
 
 	for _, address := range strings.Split(*replicas, ",") {
-		log.Println("Added replica:", address)
-		i.AddReplica(address)
+		if address != "" {
+			log.Println("Added replica:", address)
+			i.AddReplica(address)
+		}
 	}
 
 	i.Start()
