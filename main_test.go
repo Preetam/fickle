@@ -92,3 +92,43 @@ func TestCommandLog(t *testing.T) {
 	}
 
 }
+
+func TestReplica(t *testing.T) {
+	i := NewInstance(":12348", "")
+	j := NewInstance(":12349", "")
+
+	go j.Start()
+	go i.Start()
+
+	time.Sleep(time.Millisecond * 100) // Wait for the replica to start
+
+	i.AddReplica(":12349")
+
+	// Sending to the primary
+	conn, err := net.Dial("tcp", ":12348")
+	if err != nil {
+		t.Error(err)
+	}
+	write(conn, "foo", "bar")
+	if !verify(conn) {
+		t.Error("Bad write!")
+	}
+	if r := read(conn, "foo"); r != "bar" {
+		t.Errorf("Bad read! Got %v", r)
+	}
+	conn.Close()
+
+	// Reading from the replica
+	conn, err = net.Dial("tcp", ":12349")
+	if err != nil {
+		t.Error(err)
+	}
+	write(conn, "foo", "bar")
+	if !verify(conn) {
+		t.Error("Bad write!")
+	}
+	if r := read(conn, "foo"); r != "bar" {
+		t.Errorf("Bad read! Got %v", r)
+	}
+	conn.Close()
+}

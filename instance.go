@@ -34,7 +34,7 @@ func compareStrings(a, b interface{}) (result int) {
 // Instance is a fickle instance
 type Instance struct {
 	db         *lexicon.Lexicon
-	replicas   map[string]net.Conn
+	replicas   map[string]*Replica
 	listenAddr string
 	connman    *ConnMan
 	commandLog string
@@ -44,7 +44,7 @@ type Instance struct {
 func NewInstance(addr string, log string) *Instance {
 	i := &Instance{
 		db:         lexicon.New(compareStrings),
-		replicas:   make(map[string]net.Conn),
+		replicas:   make(map[string]*Replica),
 		listenAddr: addr,
 	}
 	i.connman = NewConnMan(i)
@@ -99,6 +99,13 @@ func (i *Instance) Start() {
 	}
 }
 
+func (i *Instance) AddReplica(address string) {
+	conn, err := net.Dial("tcp", address)
+	if err != nil {
+		i.replicas[address].conn = &conn
+	}
+}
+
 // This is a pretty lame way to do it,
 // but I'll fix it later :)
 func (i *Instance) Execute(c Command) (byte, []byte) {
@@ -110,11 +117,13 @@ func (i *Instance) Execute(c Command) (byte, []byte) {
 		if err := i.LogCommand(c); err != nil {
 			return ERR_INTERNAL, nil
 		}
+		i.Replicate(c)
 		return i.Set(c.Var1, c.Var2)
 	case OP_CLEAR:
 		if err := i.LogCommand(c); err != nil {
 			return ERR_INTERNAL, nil
 		}
+		i.Replicate(c)
 		return i.Clear(c.Var1)
 	case OP_GETRANGE:
 		return i.GetRange(c.Var1, c.Var2)
@@ -122,10 +131,24 @@ func (i *Instance) Execute(c Command) (byte, []byte) {
 		if err := i.LogCommand(c); err != nil {
 			return ERR_INTERNAL, nil
 		}
+		i.Replicate(c)
 		return i.ClearRange(c.Var1, c.Var2)
 	}
 
 	return ERR_INVALID_OP, nil
+}
+
+func (i *Instance) Replicate(c Command) {
+	cmdStr := ""
+	if c.Var2 != "" {
+		cmdStr = GenerateCommand(c.Type, c.Var1, c.Var2)
+	} else {
+		cmdStr = GenerateCommand(c.Type, c.Var1)
+	}
+
+	for _, replica := range i.replicas {
+		replica.Send(cmdStr)
+	}
 }
 
 func (i *Instance) LogCommand(c Command) error {
