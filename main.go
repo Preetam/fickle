@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"runtime"
 	"strings"
 )
@@ -19,9 +20,11 @@ func main() {
 	if *debugHTTP {
 		go StartHttpDebug(i)
 	}
-	i.Start()
 
 	for _, address := range strings.Split(*replicas, ",") {
+		log.Println("Added replica:", address)
 		i.AddReplica(address)
 	}
+
+	i.Start()
 }
