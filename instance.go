@@ -178,8 +178,8 @@ func (i *Instance) LogCommand(c Command) error {
 }
 
 func (i *Instance) Get(key string) (resErr byte, resBody []byte) {
-	r, err := i.db.Get(key)
-	if err == lexicon.ErrKeyNotPresent {
+	r := i.db.Get(key)
+	if r == nil {
 		resErr = ERR_NO_ERROR
 	}
 
