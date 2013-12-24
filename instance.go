@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"hash/adler32"
 	"io"
 	"log"
 	"net"
@@ -46,6 +47,9 @@ func NewInstance(addr string, log string) *Instance {
 		db:         lexicon.New(compareStrings),
 		replicas:   make(map[string]*Replica),
 		listenAddr: addr,
+	}
+	i.db.Hasher = func(i interface{}) int {
+		return int(adler32.Checksum([]byte(i.(string))))
 	}
 	i.connman = NewConnMan(i)
 
