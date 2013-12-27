@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/binary"
-	"hash/adler32"
 	"io"
 	"log"
 	"net"
@@ -10,27 +9,6 @@ import (
 
 	"github.com/PreetamJinka/lexicon"
 )
-
-func compareStrings(a, b interface{}) (result int) {
-	defer func() {
-		if r := recover(); r != nil {
-			// Log it?
-		}
-	}()
-
-	aStr := a.(string)
-	bStr := b.(string)
-
-	if aStr > bStr {
-		result = 1
-	}
-
-	if aStr < bStr {
-		result = -1
-	}
-
-	return
-}
 
 // Instance is a fickle instance
 type Instance struct {
@@ -44,12 +22,9 @@ type Instance struct {
 
 func NewInstance(addr string, log string) *Instance {
 	i := &Instance{
-		db:         lexicon.New(compareStrings),
+		db:         lexicon.New(),
 		replicas:   make(map[string]*Replica),
 		listenAddr: addr,
-	}
-	i.db.Hasher = func(i interface{}) int {
-		return int(adler32.Checksum([]byte(i.(string))))
 	}
 	i.connman = NewConnMan(i)
 
@@ -183,17 +158,11 @@ func (i *Instance) LogCommand(c Command) error {
 
 func (i *Instance) Get(key string) (resErr byte, resBody []byte) {
 	r := i.db.Get(key)
-	if r == nil {
+	if r != "" {
 		resErr = ERR_NO_ERROR
 	}
 
-	cs, ok := r.(string)
-	if !ok {
-		resErr = ERR_INTERNAL
-		return
-	}
-
-	resBody = stringToByteArray(cs)
+	resBody = stringToByteArray(r)
 
 	return
 }
